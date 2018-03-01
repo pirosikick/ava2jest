@@ -11,14 +11,21 @@
     "eslint-plugin-node": "^6.0.1",
     "husky": "^0.14.3",
     "jest": "^22.4.2",
+    "jscodeshift": "^0.4.1",
     "lint-staged": "^7.0.0",
     "prettier": "1.10.2"
   },
   "scripts": {
     "precommit": "lint-staged",
-    "test": "jest"
+    "test": "jest",
+    "dev": "jest --watch",
+    "lint": "eslint --fix tranforms"
   },
   "lint-staged": {
+    "*.js": ["eslint --fix", "git add"],
     "*.{js,json,css,md}": ["prettier --write", "git add"]
+  },
+  "engines": {
+    "node": ">= 8.0.0"
   }
 }
