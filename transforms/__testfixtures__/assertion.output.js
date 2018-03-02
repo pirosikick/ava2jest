@@ -31,6 +31,9 @@ test("assertions", () => {
   expect(() => {
     throw new Error("ERROR");
   }).not.toThrow();
+  expect(() => {
+    throw new Error("ERROR");
+  }).toThrow(Error);
 
   const aNum = 5;
   expect(aNum).toBeGreaterThan(0);

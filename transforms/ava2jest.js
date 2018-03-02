@@ -175,11 +175,12 @@ module.exports = function(file, api) {
       }
 
       if (assertionName === "throws" || assertionName === "notThrows") {
+        const [firstArg, secondArg] = path.node.arguments;
         return path.replace(
           expectCallExpression(
-            path.node.arguments[0],
+            firstArg,
             "toThrow",
-            null,
+            j.Identifier.check(secondArg) ? secondArg : null,
             assertionName === "notThrows"
           )
         );

@@ -33,6 +33,9 @@ test("assertions", t => {
   t.notThrows(() => {
     throw new Error("ERROR");
   });
+  t.throws(() => {
+    throw new Error("ERROR");
+  }, Error);
 
   const aNum = 5;
   t.true(aNum > 0);
