@@ -128,29 +128,36 @@ module.exports = function(file, api) {
       // t.true(...); or t.false(...);
       if (assertionName === "true" || assertionName === "false") {
         const arg = path.node.arguments[0];
+        let newExpression;
 
         // t.true(arg > value) or t.false(arg > value)
-        if (j.BinaryExpression.check(arg) && arg.operator === ">") {
+        if (j.BinaryExpression.check(arg) && /^(<=?|>=?)$/.test(arg.operator)) {
+          const not = assertionName === "false";
+          const matchers = {
+            ">": "toBeGreaterThan",
+            ">=": "toBeGreaterThanOrEqual",
+            "<": "toBeLessThan",
+            "<=": "toBeLessThanOrEqual"
+          };
+
           // => expect(arg).toBeGreaterThan(value);
           // => expect(arg).not.toBeGreaterThan(value);
-          return path.replace(
-            expectCallExpression(
-              arg.left,
-              "toBeGreaterThan",
-              arg.right,
-              assertionName === "false"
-            )
+          newExpression = expectCallExpression(
+            arg.left,
+            matchers[arg.operator],
+            arg.right,
+            not
           );
-        }
-
-        // => expect(...).toBe(true or false);
-        return path.replace(
-          expectCallExpression(
+        } else {
+          // => expect(...).toBe(true or false);
+          newExpression = expectCallExpression(
             path.node.arguments[0],
             "toBe",
             j.literal(assertionName === "true")
-          )
-        );
+          );
+        }
+
+        return path.replace(newExpression);
       }
 
       // t.regex(contents, pattern) or t.notRegex(cotents, pattern);

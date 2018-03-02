@@ -35,4 +35,7 @@ test("assertions", () => {
   const aNum = 5;
   expect(aNum).toBeGreaterThan(0);
   expect(aNum).not.toBeGreaterThan(0);
+  expect(aNum).toBeGreaterThanOrEqual(0);
+  expect(aNum).toBeLessThan(0);
+  expect(aNum).toBeLessThanOrEqual(0);
 });

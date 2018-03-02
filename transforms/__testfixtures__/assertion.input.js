@@ -37,4 +37,7 @@ test("assertions", t => {
   const aNum = 5;
   t.true(aNum > 0);
   t.false(aNum > 0);
+  t.true(aNum >= 0);
+  t.true(aNum < 0);
+  t.true(aNum <= 0);
 });
