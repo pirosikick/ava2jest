@@ -1,7 +1,3 @@
-beforeEach(() => {});
-
-afterEach(() => {});
-
 test("assertions", () => {
   const trueValue = true;
   expect(trueValue).toBe(true);

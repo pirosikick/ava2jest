@@ -174,8 +174,11 @@ module.exports = function(file, api) {
         );
       }
 
+      // t.throws(..., Error) or t.notThrows(..., Error)
       if (assertionName === "throws" || assertionName === "notThrows") {
         const [firstArg, secondArg] = path.node.arguments;
+        // => expect(...).toThrow(Error)
+        // => expect(...).not.toThrow(Error)
         return path.replace(
           expectCallExpression(
             firstArg,
@@ -191,16 +194,25 @@ module.exports = function(file, api) {
   callExpressions
     .filter(
       path =>
-        // t.beforeEach(...) or t.afterEach(...)
+        // t.beforeEach(...), t.afterEach(...)
+        // t.before(...), t.after(...)
         j.MemberExpression.check(path.node.callee) &&
         j.Identifier.check(path.node.callee.object) &&
         path.node.callee.object.name === "test" &&
         j.Identifier.check(path.node.callee.property) &&
-        /^(before|after)Each$/.test(path.node.callee.property.name)
+        /^(?:before|after)(?:Each)?$/.test(path.node.callee.property.name)
     )
     .forEach(path => {
-      // t.beforeEach(...) => beforeEach(...)
-      path.node.callee = path.node.callee.property;
+      if (/Each$/.test(path.node.callee.property.name)) {
+        // t.beforeEach(...) => beforeEach(...)
+        path.node.callee = path.node.callee.property;
+      } else {
+        // t.before(...) => beforeAll(...)
+        path.node.callee =
+          path.node.callee.property.name === "before"
+            ? j.identifier("beforeAll")
+            : j.identifier("afterAll");
+      }
     });
 
   return root.toSource({ quote: "single" });
