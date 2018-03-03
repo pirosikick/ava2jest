@@ -187,5 +187,21 @@ module.exports = function(file, api) {
       }
     });
 
+  // setup & teardown
+  callExpressions
+    .filter(
+      path =>
+        // t.beforeEach(...) or t.afterEach(...)
+        j.MemberExpression.check(path.node.callee) &&
+        j.Identifier.check(path.node.callee.object) &&
+        path.node.callee.object.name === "test" &&
+        j.Identifier.check(path.node.callee.property) &&
+        /^(before|after)Each$/.test(path.node.callee.property.name)
+    )
+    .forEach(path => {
+      // t.beforeEach(...) => beforeEach(...)
+      path.node.callee = path.node.callee.property;
+    });
+
   return root.toSource({ quote: "single" });
 };

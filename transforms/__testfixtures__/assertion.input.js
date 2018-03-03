@@ -1,5 +1,9 @@
 import ava from "ava";
 
+test.beforeEach(() => {});
+
+test.afterEach(() => {});
+
 test("assertions", t => {
   const trueValue = true;
   t.true(trueValue);
