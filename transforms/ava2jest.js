@@ -203,6 +203,16 @@ module.exports = function(file, api) {
         /^(?:before|after)(?:Each)?$/.test(path.node.callee.property.name)
     )
     .forEach(path => {
+      // test.beforeEach(t => {}) => test.beforeEach(() => {})
+      path.node.arguments.forEach(arg => {
+        if (
+          (j.ArrowFunctionExpression.check(arg) ||
+            j.FunctionExpression.check(arg)) &&
+          arg.params.length
+        ) {
+          arg.params = [];
+        }
+      });
       if (/Each$/.test(path.node.callee.property.name)) {
         // t.beforeEach(...) => beforeEach(...)
         path.node.callee = path.node.callee.property;
@@ -213,6 +223,27 @@ module.exports = function(file, api) {
             ? j.identifier("beforeAll")
             : j.identifier("afterAll");
       }
+    });
+
+  // context
+  let contextDefined = false;
+  root
+    .find(j.MemberExpression, {
+      object: { name: "t" },
+      property: { name: "context" }
+    })
+    .forEach(path => {
+      if (!contextDefined) {
+        // let context = {};
+        const defineContext = j.variableDeclaration("let", [
+          j.variableDeclarator(j.identifier("context"), j.objectExpression([]))
+        ]);
+        const firstPath = root.find(j.Program).get("body", 0);
+        j(firstPath).insertBefore(defineContext);
+        contextDefined = true;
+      }
+      // t.context => context
+      path.replace(j.identifier("context"));
     });
 
   return root.toSource({ quote: "single" });
