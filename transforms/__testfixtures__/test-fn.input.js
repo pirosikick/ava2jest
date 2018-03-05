@@ -5,3 +5,7 @@ test.cb("with callback", t => {
     t.end();
   });
 });
+
+test.only("only", t => {});
+test.skip("skip", t => {});
+test.serial("serial", t => {});

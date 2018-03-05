@@ -20,6 +20,9 @@ module.exports = function(file, api) {
     return j.callExpression(callee, matcherArg ? [matcherArg] : []);
   };
 
+  const isFunction = node =>
+    j.FunctionExpression.check(node) || j.ArrowFunctionExpression.check(node);
+
   // Remove "import test from 'ava'"
   root
     .find(j.ImportDeclaration)
@@ -29,6 +32,38 @@ module.exports = function(file, api) {
     });
 
   const callExpressions = root.find(j.CallExpression);
+
+  root
+    .find(
+      j.CallExpression,
+      node =>
+        // test(...)
+        (j.Identifier.check(node.callee) && node.callee.name === "test") ||
+        // test.only(...), test.skip(...)
+        (j.MemberExpression.check(node.callee) &&
+          j.Identifier.check(node.callee.object) &&
+          node.callee.object.name === "test" &&
+          j.Identifier.check(node.callee.property) &&
+          /^(?:only|skip|serial)$/.test(node.callee.property.name))
+    )
+    .forEach(path => {
+      for (const arg of path.node.arguments) {
+        if (!isFunction(arg)) {
+          continue;
+        }
+
+        // test(t => {}) => test(() => {})
+        arg.params = [];
+
+        // test.serial(...) => test(...)
+        if (
+          j.MemberExpression.check(path.node.callee) &&
+          path.node.callee.property.name === "serial"
+        ) {
+          path.node.callee = j.identifier("test");
+        }
+      }
+    });
 
   // Remove t param on calling test function
   //   before: test('desc', t => {});
