@@ -45,6 +45,8 @@ test("assertions", t => {
   t.true(aNum <= 0);
 
   t.log("log", "log");
+
+  t.plan(100);
 });
 
 // transform only in test function

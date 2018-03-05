@@ -43,6 +43,8 @@ test("assertions", () => {
   expect(aNum).toBeLessThanOrEqual(0);
 
   console.log("log", "log");
+
+  expect.assertions(100);
 });
 
 // transform only in test function

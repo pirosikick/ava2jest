@@ -170,10 +170,21 @@ module.exports = function(file, api) {
         // t.log(message...)
         if (assertionName === "log") {
           // => console.log(message...)
-          return (path.node.callee = j.memberExpression(
+          path.node.callee = j.memberExpression(
             j.identifier("console"),
             j.identifier("log")
-          ));
+          );
+          return;
+        }
+
+        // t.plan(count)
+        if (assertionName === "plan") {
+          // => expect.assertions(count)
+          path.node.callee = j.memberExpression(
+            j.identifier("expect"),
+            j.identifier("assertions")
+          );
+          return;
         }
       });
   };
