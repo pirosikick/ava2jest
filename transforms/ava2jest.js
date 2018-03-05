@@ -251,5 +251,44 @@ module.exports = function(file, api) {
       path.replace(j.identifier("context"));
     });
 
+  // test.cb
+  root
+    .find(j.CallExpression, {
+      callee: {
+        object: { name: "test" },
+        property: { name: "cb" }
+      }
+    })
+    .forEach(path => {
+      // test.cb(...) => test(...)
+      path.node.callee = j.identifier("test");
+
+      path.node.arguments.forEach(arg => {
+        if (
+          !(
+            j.ArrowFunctionExpression.check(arg) ||
+            j.FunctionExpression.check(arg)
+          )
+        ) {
+          return;
+        }
+
+        // test(t => { ... }) => test(done => { ... })
+        arg.params[0] = j.identifier("done");
+
+        // t.end() => done()
+        j(arg)
+          .find(j.CallExpression, {
+            callee: {
+              object: { name: "t" },
+              property: { name: "end" }
+            }
+          })
+          .forEach(tEndCall => {
+            tEndCall.node.callee = j.identifier("done");
+          });
+      });
+    });
+
   return root.toSource({ quote: "single" });
 };
