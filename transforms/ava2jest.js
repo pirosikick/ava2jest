@@ -238,8 +238,13 @@ module.exports = function(file, api) {
         const defineContext = j.variableDeclaration("let", [
           j.variableDeclarator(j.identifier("context"), j.objectExpression([]))
         ]);
-        const firstPath = root.find(j.Program).get("body", 0);
-        j(firstPath).insertBefore(defineContext);
+        const imports = root.find(j.ImportDeclaration);
+        if (imports.length) {
+          imports.at(imports.length - 1).insertAfter(defineContext);
+        } else {
+          const firstPath = root.find(j.Program).get("body", 0);
+          j(firstPath).insertBefore(defineContext);
+        }
         contextDefined = true;
       }
       // t.context => context

@@ -6,3 +6,4 @@ const { defineTest } = require("jscodeshift/dist/testUtils");
 defineTest(__dirname, "ava2jest", null, "assertion");
 defineTest(__dirname, "ava2jest", null, "setup-and-teardown");
 defineTest(__dirname, "ava2jest", null, "context");
+defineTest(__dirname, "ava2jest", null, "context2");
