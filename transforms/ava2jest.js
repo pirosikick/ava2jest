@@ -23,13 +23,30 @@ module.exports = function(file, api) {
   const isFunction = node =>
     j.FunctionExpression.check(node) || j.ArrowFunctionExpression.check(node);
 
+  // testId is a local identifier of ava
+  // ex:
+  //   import test from 'ava' => testId === 'test'
+  //   import tt from 'ava' => testId === 'tt'
+  let testId;
+
   // Remove "import test from 'ava'"
   root
-    .find(j.ImportDeclaration)
-    .filter(path => path.node.source.value === "ava")
+    .find(j.ImportDeclaration, {
+      source: { value: "ava" }
+    })
     .forEach(path => {
+      path.node.specifiers.forEach(specifier => {
+        if (j.ImportDefaultSpecifier.check(specifier)) {
+          testId = specifier.local.name;
+        }
+      });
+
       path.prune();
     });
+
+  if (!testId) {
+    return;
+  }
 
   const callExpressions = root.find(j.CallExpression);
 
@@ -38,21 +55,31 @@ module.exports = function(file, api) {
       j.CallExpression,
       node =>
         // test(...)
-        (j.Identifier.check(node.callee) && node.callee.name === "test") ||
+        (j.Identifier.check(node.callee) && node.callee.name === testId) ||
         // test.only(...), test.skip(...)
         (j.MemberExpression.check(node.callee) &&
           j.Identifier.check(node.callee.object) &&
-          node.callee.object.name === "test" &&
+          node.callee.object.name === testId &&
           j.Identifier.check(node.callee.property) &&
           /^(?:only|skip|serial)$/.test(node.callee.property.name))
     )
     .forEach(path => {
+      if (testId !== "test") {
+        if (j.Identifier.check(path.node.callee)) {
+          path.node.callee = j.identifier("test");
+        } else {
+          // node.callee is a MemberExpression
+          path.node.callee.object = j.identifier("test");
+        }
+      }
+
       for (const arg of path.node.arguments) {
         if (!isFunction(arg)) {
           continue;
         }
 
-        // test(t => {}) => test(() => {})
+        // Remove t param on calling test function
+        // ex: test(t => {}) => test(() => {})
         arg.params = [];
 
         // test.serial(...) => test(...)
@@ -63,26 +90,6 @@ module.exports = function(file, api) {
           path.node.callee = j.identifier("test");
         }
       }
-    });
-
-  // Remove t param on calling test function
-  //   before: test('desc', t => {});
-  //   after: test('desc', () => {});
-  callExpressions
-    .filter(path => path.node.callee.name === "test")
-    .forEach(path => {
-      path.node.arguments
-        .filter(
-          arg =>
-            j.FunctionExpression.check(arg) ||
-            j.ArrowFunctionExpression.check(arg)
-        )
-        .forEach(node => {
-          const firstParam = node.params[0];
-          if (j.Identifier.check(firstParam) && firstParam.name === "t") {
-            node.params = node.params.slice(1);
-          }
-        });
     });
 
   callExpressions
@@ -233,7 +240,7 @@ module.exports = function(file, api) {
         // t.before(...), t.after(...)
         j.MemberExpression.check(path.node.callee) &&
         j.Identifier.check(path.node.callee.object) &&
-        path.node.callee.object.name === "test" &&
+        path.node.callee.object.name === testId &&
         j.Identifier.check(path.node.callee.property) &&
         /^(?:before|after)(?:Each)?$/.test(path.node.callee.property.name)
     )

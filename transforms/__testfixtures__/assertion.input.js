@@ -1,4 +1,4 @@
-import ava from "ava";
+import test from "ava";
 
 test("assertions", t => {
   const trueValue = true;
