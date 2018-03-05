@@ -42,3 +42,6 @@ test("assertions", () => {
   expect(aNum).toBeLessThan(0);
   expect(aNum).toBeLessThanOrEqual(0);
 });
+
+// transform only in test function
+t.true(true);
