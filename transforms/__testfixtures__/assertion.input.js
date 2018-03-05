@@ -43,6 +43,8 @@ test("assertions", t => {
   t.true(aNum >= 0);
   t.true(aNum < 0);
   t.true(aNum <= 0);
+
+  t.log("log", "log");
 });
 
 // transform only in test function

@@ -166,6 +166,15 @@ module.exports = function(file, api) {
             )
           );
         }
+
+        // t.log(message...)
+        if (assertionName === "log") {
+          // => console.log(message...)
+          return (path.node.callee = j.memberExpression(
+            j.identifier("console"),
+            j.identifier("log")
+          ));
+        }
       });
   };
 

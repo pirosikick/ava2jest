@@ -41,6 +41,8 @@ test("assertions", () => {
   expect(aNum).toBeGreaterThanOrEqual(0);
   expect(aNum).toBeLessThan(0);
   expect(aNum).toBeLessThanOrEqual(0);
+
+  console.log("log", "log");
 });
 
 // transform only in test function
