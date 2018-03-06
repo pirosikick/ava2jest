@@ -344,8 +344,23 @@ module.exports = function(file, api) {
           return;
         }
 
+        const idExists = name => j(arg).find(j.Identifier, { name }).length > 0;
+
+        // if 'done' is already used, 'done2' is used as test callback.
+        // if 'done2' is already used, 'done3' is used as test callback.
+        // ...
+        let doneName = "done";
+        for (let i = 2; i <= 10; i++) {
+          if (!idExists(doneName)) {
+            break;
+          }
+          doneName = `done${i}`;
+        }
+
+        const doneId = j.identifier(doneName);
+
         // test(t => { ... }) => test(done => { ... })
-        arg.params[0] = j.identifier("done");
+        arg.params[0] = doneId;
 
         // t.end() => done()
         j(arg)
@@ -356,7 +371,7 @@ module.exports = function(file, api) {
             }
           })
           .forEach(tEndCall => {
-            tEndCall.node.callee = j.identifier("done");
+            tEndCall.node.callee = doneId;
           });
       });
     });

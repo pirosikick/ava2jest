@@ -9,3 +9,11 @@ test.cb("with callback", t => {
 test.only("only", t => {});
 test.skip("skip", t => {});
 test.serial("serial", t => {});
+
+test.cb("done is already used in scope", t => {
+  const done = () => {};
+
+  setTimeout(() => {
+    t.end();
+  });
+});
