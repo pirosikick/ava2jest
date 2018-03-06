@@ -325,10 +325,12 @@ module.exports = function(file, api) {
       property: { name: "context" }
     })
     .forEach(path => {
+      const contextId = j.identifier("tContext");
+
       if (!contextDefined) {
         // let context = {};
         const defineContext = j.variableDeclaration("let", [
-          j.variableDeclarator(j.identifier("context"), j.objectExpression([]))
+          j.variableDeclarator(contextId, j.objectExpression([]))
         ]);
         const imports = root.find(j.ImportDeclaration);
         if (imports.length) {
@@ -339,8 +341,8 @@ module.exports = function(file, api) {
         }
         contextDefined = true;
       }
-      // t.context => context
-      path.replace(j.identifier("context"));
+      // t.context => tContext
+      path.replace(contextId);
     });
 
   // test.cb

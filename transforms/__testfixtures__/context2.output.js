@@ -1,11 +1,11 @@
 import somePkg from "some-pkg";
 
-let context = {};
+let tContext = {};
 
 beforeEach(() => {
-  context = { key: "value" };
+  tContext = { key: "value" };
 });
 
 test("title", () => {
-  console.log(context.key);
+  console.log(tContext.key);
 });
