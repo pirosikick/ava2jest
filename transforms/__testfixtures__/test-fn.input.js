@@ -12,8 +12,10 @@ test.serial("serial", t => {});
 
 test.cb("done is already used in scope", t => {
   const done = () => {};
+  t.true(typeof done === "function");
 
   setTimeout(() => {
+    t.true(true);
     t.end();
   });
 });

@@ -49,3 +49,25 @@ test("assertions", () => {
 
 // transform only in test function
 t.true(true);
+
+// transform assertions in setup & teardown
+beforeAll(() => {
+  expect(true).toBe(true);
+});
+afterAll(() => {
+  expect(true).toBe(true);
+});
+beforeEach(() => {
+  expect(true).toBe(true);
+});
+afterEach(() => {
+  expect(true).toBe(true);
+});
+
+test("fail with message", () => {
+  throw new Error("FAIL");
+});
+
+test("fail without message", () => {
+  throw new Error();
+});

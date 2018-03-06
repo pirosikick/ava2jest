@@ -51,3 +51,25 @@ test("assertions", t => {
 
 // transform only in test function
 t.true(true);
+
+// transform assertions in setup & teardown
+test.before(t => {
+  t.true(true);
+});
+test.after(t => {
+  t.true(true);
+});
+test.beforeEach(t => {
+  t.true(true);
+});
+test.afterEach(t => {
+  t.true(true);
+});
+
+test("fail with message", t => {
+  t.fail("FAIL");
+});
+
+test("fail without message", t => {
+  t.fail();
+});

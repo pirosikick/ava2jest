@@ -10,8 +10,10 @@ test("serial", () => {});
 
 test("done is already used in scope", done2 => {
   const done = () => {};
+  expect(typeof done === "function").toBe(true);
 
   setTimeout(() => {
+    expect(true).toBe(true);
     done2();
   });
 });

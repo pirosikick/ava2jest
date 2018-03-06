@@ -186,6 +186,15 @@ module.exports = function(file, api) {
           );
           return;
         }
+
+        // t.fail('message')
+        if (assertionName === "fail") {
+          const args = path.node.arguments[0] ? [path.node.arguments[0]] : [];
+          // => throw new Error('message')
+          path.parentPath.replace(
+            j.throwStatement(j.newExpression(j.identifier("Error"), args))
+          );
+        }
       });
   };
 
@@ -297,12 +306,10 @@ module.exports = function(file, api) {
     .forEach(path => {
       // test.beforeEach(t => {}) => test.beforeEach(() => {})
       path.node.arguments.forEach(arg => {
-        if (
-          (j.ArrowFunctionExpression.check(arg) ||
-            j.FunctionExpression.check(arg)) &&
-          arg.params.length
-        ) {
+        if (isFunction(arg) && arg.params.length) {
+          const tName = arg.params[0].name;
           arg.params = [];
+          transformAssertions(arg, tName);
         }
       });
       if (/Each$/.test(path.node.callee.property.name)) {
@@ -362,6 +369,12 @@ module.exports = function(file, api) {
           return;
         }
 
+        // test.cb(() => {}) is not correct for AVA
+        if (!j.Identifier.check(arg.params[0])) {
+          return;
+        }
+
+        const tName = arg.params[0].name;
         const idExists = name => j(arg).find(j.Identifier, { name }).length > 0;
 
         // if 'done' is already used, 'done2' is used as test callback.
@@ -384,13 +397,15 @@ module.exports = function(file, api) {
         j(arg)
           .find(j.CallExpression, {
             callee: {
-              object: { name: "t" },
+              object: { name: tName },
               property: { name: "end" }
             }
           })
           .forEach(tEndCall => {
             tEndCall.node.callee = doneId;
           });
+
+        transformAssertions(arg, tName);
       });
     });
 
