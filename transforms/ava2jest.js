@@ -262,6 +262,22 @@ module.exports = function(file, api) {
         }
 
         transformAssertions(arg, tName);
+
+        // t.pass is called in implementation
+        const isPassUsed = !!j(arg).find(j.CallExpression, {
+          callee: {
+            object: { name: "t" },
+            property: { name: "pass" }
+          }
+        }).length;
+
+        // test => test.skip
+        if (isPassUsed) {
+          path.node.callee = j.memberExpression(
+            j.identifier("test"),
+            j.identifier("skip")
+          );
+        }
       }
     });
 

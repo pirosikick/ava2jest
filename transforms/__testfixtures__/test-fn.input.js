@@ -21,3 +21,7 @@ test.cb("done is already used in scope", t => {
 test("other id is used instead of t", tt => {
   tt.is(true, true);
 });
+
+test("use t.pass()", t => {
+  t.pass();
+});
