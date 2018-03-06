@@ -17,3 +17,7 @@ test.cb("done is already used in scope", t => {
     t.end();
   });
 });
+
+test("other id is used instead of t", tt => {
+  tt.is(true, true);
+});

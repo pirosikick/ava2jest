@@ -24,14 +24,14 @@ module.exports = function(file, api) {
     j.FunctionExpression.check(node) || j.ArrowFunctionExpression.check(node);
 
   // t.*** => expect
-  const transformAssertions = rootNode => {
+  const transformAssertions = (rootNode, tName) => {
     j(rootNode)
       .find(
         j.CallExpression,
         node =>
           j.MemberExpression.check(node.callee) &&
           j.Identifier.check(node.callee.object) &&
-          node.callee.object.name === "t"
+          node.callee.object.name === tName
       )
       .forEach(path => {
         // t.${assertionName}
@@ -243,11 +243,11 @@ module.exports = function(file, api) {
         }
 
         // ex:
-        //   test(t => {}) => tId === 't'
-        //   test(someVar => {}) => tId === 'someVar'
-        // const tId = j.Identifier.check(arg.params[0])
-        //   ? arg.params[0].name
-        //   : false;
+        //   test(t => {}) => tName === 't'
+        //   test(someVar => {}) => tName === 'someVar'
+        const tName = j.Identifier.check(arg.params[0])
+          ? arg.params[0].name
+          : false;
 
         // Remove t param on calling test function
         // ex: test(t => {}) => test(() => {})
@@ -261,7 +261,7 @@ module.exports = function(file, api) {
           path.node.callee = j.identifier("test");
         }
 
-        transformAssertions(arg);
+        transformAssertions(arg, tName);
       }
     });
 

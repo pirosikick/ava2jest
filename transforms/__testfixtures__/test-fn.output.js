@@ -15,3 +15,7 @@ test("done is already used in scope", done2 => {
     done2();
   });
 });
+
+test("other id is used instead of t", () => {
+  expect(true).toBe(true);
+});
