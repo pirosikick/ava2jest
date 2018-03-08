@@ -6,6 +6,7 @@
   "author": "pirosikick <pirosikick@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "coveralls": "^3.0.0",
     "eslint": "^4.18.1",
     "eslint-config-prettier": "^2.9.0",
     "eslint-plugin-node": "^6.0.1",
@@ -17,9 +18,11 @@
   },
   "scripts": {
     "precommit": "lint-staged",
-    "test": "jest",
+    "test": "jest --coverage",
     "dev": "jest --watch",
-    "lint": "eslint --fix tranforms"
+    "lint": "eslint --fix tranforms",
+    "coveralls":
+      "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
   "lint-staged": {
     "*.js": ["eslint --fix", "git add"],
