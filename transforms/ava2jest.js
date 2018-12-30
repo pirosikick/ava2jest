@@ -246,47 +246,52 @@ module.exports = function(file, api) {
         }
       }
 
-      for (const arg of path.node.arguments) {
-        if (!isFunction(arg)) {
-          continue;
+      // test(t => {}) => test("", t => {})
+      if (!j.Literal.check(path.node.arguments[0])) {
+        path.node.arguments = [j.literal(""), ...path.node.arguments];
+      }
+
+      if (!isFunction(path.node.arguments[1])) {
+        return;
+      }
+
+      const fnArg = path.node.arguments[1];
+
+      // ex:
+      //   test(t => {}) => tName === 't'
+      //   test(someVar => {}) => tName === 'someVar'
+      const tName = j.Identifier.check(fnArg.params[0])
+        ? fnArg.params[0].name
+        : false;
+
+      // Remove t param on calling test function
+      // ex: test(t => {}) => test(() => {})
+      fnArg.params = [];
+
+      // test.serial(...) => test(...)
+      if (
+        j.MemberExpression.check(path.node.callee) &&
+        path.node.callee.property.name === "serial"
+      ) {
+        path.node.callee = j.identifier("test");
+      }
+
+      transformAssertions(fnArg, tName);
+
+      // t.pass is called in implementation
+      const isPassUsed = !!j(fnArg).find(j.CallExpression, {
+        callee: {
+          object: { name: "t" },
+          property: { name: "pass" }
         }
+      }).length;
 
-        // ex:
-        //   test(t => {}) => tName === 't'
-        //   test(someVar => {}) => tName === 'someVar'
-        const tName = j.Identifier.check(arg.params[0])
-          ? arg.params[0].name
-          : false;
-
-        // Remove t param on calling test function
-        // ex: test(t => {}) => test(() => {})
-        arg.params = [];
-
-        // test.serial(...) => test(...)
-        if (
-          j.MemberExpression.check(path.node.callee) &&
-          path.node.callee.property.name === "serial"
-        ) {
-          path.node.callee = j.identifier("test");
-        }
-
-        transformAssertions(arg, tName);
-
-        // t.pass is called in implementation
-        const isPassUsed = !!j(arg).find(j.CallExpression, {
-          callee: {
-            object: { name: "t" },
-            property: { name: "pass" }
-          }
-        }).length;
-
-        // test => test.skip
-        if (isPassUsed) {
-          path.node.callee = j.memberExpression(
-            j.identifier("test"),
-            j.identifier("skip")
-          );
-        }
+      // test => test.skip
+      if (isPassUsed) {
+        path.node.callee = j.memberExpression(
+          j.identifier("test"),
+          j.identifier("skip")
+        );
       }
     });
 
