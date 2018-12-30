@@ -332,6 +332,40 @@ module.exports = function(file, api) {
       }
     });
 
+  // test.(before|after)(?:Each)?.always => test.$0
+  root
+    .find(
+      j.CallExpression,
+      node =>
+        j.MemberExpression.check(node.callee) &&
+        node.callee.property.name === "always" &&
+        j.MemberExpression.check(node.callee.object) &&
+        j.Identifier.check(node.callee.object.object) &&
+        node.callee.object.object.name === testId &&
+        j.Identifier.check(node.callee.object.property) &&
+        /^(?:before|after)(?:Each)?$/.test(node.callee.object.property.name)
+    )
+    .forEach(path => {
+      // test.*.always(t => {}) => test.*.always(() => {})
+      path.node.arguments.forEach(arg => {
+        if (isFunction(arg) && arg.params.length) {
+          const tName = arg.params[0].name;
+          arg.params = [];
+          transformAssertions(arg, tName);
+        }
+      });
+      if (/Each$/.test(path.node.callee.object.property.name)) {
+        // t.beforeEach.always(...) => beforeEach(...)
+        path.node.callee = path.node.callee.object.property;
+      } else {
+        // t.before.always(...) => beforeAll(...)
+        path.node.callee =
+          path.node.callee.object.property.name === "before"
+            ? j.identifier("beforeAll")
+            : j.identifier("afterAll");
+      }
+    });
+
   // context
   let contextDefined = false;
   root
