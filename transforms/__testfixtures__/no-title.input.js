@@ -4,3 +4,7 @@ import test from "ava";
 test(t => {
   t.is(true, true);
 });
+
+test(`template element`, t => {
+  t.is(true, true);
+});

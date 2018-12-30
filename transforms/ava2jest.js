@@ -23,6 +23,9 @@ module.exports = function(file, api) {
   const isFunction = node =>
     j.FunctionExpression.check(node) || j.ArrowFunctionExpression.check(node);
 
+  const isLiteral = node =>
+    j.Literal.check(node) || j.TemplateLiteral.check(node);
+
   // t.*** => expect
   const transformAssertions = (rootNode, tName) => {
     j(rootNode)
@@ -247,7 +250,7 @@ module.exports = function(file, api) {
       }
 
       // test(t => {}) => test("", t => {})
-      if (!j.Literal.check(path.node.arguments[0])) {
+      if (!isLiteral(path.node.arguments[0])) {
         path.node.arguments = [j.literal(""), ...path.node.arguments];
       }
 
@@ -255,18 +258,18 @@ module.exports = function(file, api) {
         return;
       }
 
-      const fnArg = path.node.arguments[1];
+      const fn = path.node.arguments[1];
 
       // ex:
       //   test(t => {}) => tName === 't'
       //   test(someVar => {}) => tName === 'someVar'
-      const tName = j.Identifier.check(fnArg.params[0])
-        ? fnArg.params[0].name
+      const tName = j.Identifier.check(fn.params[0])
+        ? fn.params[0].name
         : false;
 
       // Remove t param on calling test function
       // ex: test(t => {}) => test(() => {})
-      fnArg.params = [];
+      fn.params = [];
 
       // test.serial(...) => test(...)
       if (
@@ -276,10 +279,10 @@ module.exports = function(file, api) {
         path.node.callee = j.identifier("test");
       }
 
-      transformAssertions(fnArg, tName);
+      transformAssertions(fn, tName);
 
       // t.pass is called in implementation
-      const isPassUsed = !!j(fnArg).find(j.CallExpression, {
+      const isPassUsed = !!j(fn).find(j.CallExpression, {
         callee: {
           object: { name: "t" },
           property: { name: "pass" }
@@ -369,49 +372,53 @@ module.exports = function(file, api) {
       // test.cb(...) => test(...)
       path.node.callee = j.identifier("test");
 
-      path.node.arguments.forEach(arg => {
-        if (!isFunction(arg)) {
-          return;
+      if (!isLiteral(path.node.arguments[0])) {
+        path.node.arguments = [j.Literal(""), ...path.node.arguments];
+      }
+
+      if (!isFunction(path.node.arguments[1])) {
+        return;
+      }
+
+      const fn = path.node.arguments[1];
+
+      // test.cb(() => {}) is not correct for AVA
+      if (!j.Identifier.check(fn.params[0])) {
+        return;
+      }
+
+      const tName = fn.params[0].name;
+      const idExists = name => j(fn).find(j.Identifier, { name }).length > 0;
+
+      // if 'done' is already used, 'done2' is used as test callback.
+      // if 'done2' is already used, 'done3' is used as test callback.
+      // ...
+      let doneName = "done";
+      for (let i = 2; i <= 10; i++) {
+        if (!idExists(doneName)) {
+          break;
         }
+        doneName = `done${i}`;
+      }
 
-        // test.cb(() => {}) is not correct for AVA
-        if (!j.Identifier.check(arg.params[0])) {
-          return;
-        }
+      const doneId = j.identifier(doneName);
 
-        const tName = arg.params[0].name;
-        const idExists = name => j(arg).find(j.Identifier, { name }).length > 0;
+      // test(t => { ... }) => test(done => { ... })
+      fn.params[0] = doneId;
 
-        // if 'done' is already used, 'done2' is used as test callback.
-        // if 'done2' is already used, 'done3' is used as test callback.
-        // ...
-        let doneName = "done";
-        for (let i = 2; i <= 10; i++) {
-          if (!idExists(doneName)) {
-            break;
+      // t.end() => done()
+      j(fn)
+        .find(j.CallExpression, {
+          callee: {
+            object: { name: tName },
+            property: { name: "end" }
           }
-          doneName = `done${i}`;
-        }
+        })
+        .forEach(tEndCall => {
+          tEndCall.node.callee = doneId;
+        });
 
-        const doneId = j.identifier(doneName);
-
-        // test(t => { ... }) => test(done => { ... })
-        arg.params[0] = doneId;
-
-        // t.end() => done()
-        j(arg)
-          .find(j.CallExpression, {
-            callee: {
-              object: { name: tName },
-              property: { name: "end" }
-            }
-          })
-          .forEach(tEndCall => {
-            tEndCall.node.callee = doneId;
-          });
-
-        transformAssertions(arg, tName);
-      });
+      transformAssertions(fn, tName);
     });
 
   return root.toSource({ quote: "single" });
